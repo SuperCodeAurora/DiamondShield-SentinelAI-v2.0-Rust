@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpServer, HttpResponse, Responder, HttpRequest, cookie::{Cookie, SameSite}};
+use actix_web::{web, App, HttpServer, HttpResponse, Responder, HttpRequest, cookie::Cookie};
 use serde::{Deserialize, Serialize};
 use regex::Regex;
 use std::sync::Arc;
@@ -8,7 +8,8 @@ use std::collections::HashMap;
 use tracing::{info, warn, error};
 
 // --- CONFIGURATION ---
-const OLLAMA_URL: &str = "http://ollama-brain:11434/api/chat"; // Docker hostname
+// We use the docker service name "ollama-brain"
+const OLLAMA_URL: &str = "http://ollama-brain:11434/api/chat";
 const MODEL: &str = "llama3";
 const ENTROPY_THRESHOLD: f64 = 4.8;
 const MAX_REQ_PER_SEC: u32 = 10;
@@ -41,6 +42,7 @@ struct OllamaResponse {
 }
 
 // --- UTILS: SHANNON ENTROPY ---
+// Replaces heuristics.py
 fn calculate_entropy(payload: &str) -> f64 {
     if payload.is_empty() { return 0.0; }
     let mut counts = HashMap::new();
@@ -54,15 +56,8 @@ fn calculate_entropy(payload: &str) -> f64 {
     })
 }
 
-// --- LAYER 1: MATH CHALLENGE (Dynamic) ---
-// In a real app, use Signed Cookies/JWT. Here we use a simple logic for demonstration.
-fn generate_challenge() -> (String, String) {
-    // Returns (Question, Answer). 
-    // Example: ("What is 5 + 10?", "15")
-    ("5 + 10".to_string(), "15".to_string())
-}
-
 // --- LAYER 2: ASYNC AI SCAN ---
+// Replaces the slow synchronous check in core_firewall.py
 async fn scan_with_ai(payload: String) -> bool {
     // Optimization: Skip short strings
     if payload.len() < 15 { return false; }
@@ -89,7 +84,6 @@ async fn scan_with_ai(payload: String) -> bool {
     match result {
         Ok(Ok(resp)) => {
             if let Ok(json) = resp.json::<OllamaResponse>().await {
-                // Heuristic check on AI response
                 let content = json.message.content.to_lowercase();
                 return content.contains("true") || content.contains("malicious");
             }
@@ -122,14 +116,12 @@ async fn inspect_request(req: &HttpRequest, body: &str, data: &Arc<AppState>) ->
     }
 
     // 3. MATH CHALLENGE CHECK
-    // If user doesn't have the 'aegis_token=15' cookie, show challenge page.
+    // Logic: If the user doesn't have the 'aegis_token=15' cookie, show challenge page.
     if let Some(cookie) = req.cookie("aegis_token") {
         if cookie.value() != "15" {
-            // Wrong answer
-            return Some(HttpResponse::Ok().content_type("text/html").body(include_str!("../static/challenge.html")));
+             return Some(HttpResponse::Ok().content_type("text/html").body(include_str!("../static/challenge.html")));
         }
     } else {
-        // No cookie, send challenge
          return Some(HttpResponse::Ok().content_type("text/html").body(include_str!("../static/challenge.html")));
     }
 
@@ -166,6 +158,7 @@ async fn index(req: HttpRequest, data: web::Data<Arc<AppState>>, body: String) -
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Initialize logging
     tracing_subscriber::fmt::init();
     info!("🛡️ DiamondShield Rust Engine Starting on Port 8080...");
 

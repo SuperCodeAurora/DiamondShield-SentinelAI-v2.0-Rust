@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  # Service 1: The AI Brain (Llama 3)
+  ollama-brain:
+    image: ollama/ollama:latest
+    container_name: diamond_brain_rs
+    volumes:
+      - ollama_storage:/root/.ollama
+    ports:
+      - "11434:11434"
+    # restart: unless-stopped
+
+  # Service 2: The Rust Firewall
+  diamond-shield-rs:
+    build: .
+    container_name: diamond_shield_rs
+    ports:
+      - "8080:8080" # Rust runs on 8080 by default
+    environment:
+      - OLLAMA_HOST=http://ollama-brain:11434/api/chat
+      - RUST_LOG=info
+    depends_on:
+      - ollama-brain
+
+volumes:
+  ollama_storage:

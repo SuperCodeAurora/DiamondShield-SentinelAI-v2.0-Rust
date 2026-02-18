@@ -1,6 +1,7 @@
 [dependencies]
-# ... existing deps ...
+# ... existing dependencies ...
 actix-web = "4.9"
+actix-files = "0.6"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
@@ -10,6 +11,8 @@ dashmap = "6.0"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 urlencoding = "2"
-
-# NEW: For timestamps in History Tab
 chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4"] }
+
+# NEW: The Elephant Brain (Database)
+sqlx = { version = "0.7", features = ["runtime-tokio", "sqlite"] }
